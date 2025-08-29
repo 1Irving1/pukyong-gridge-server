@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>포트원 결제 테스트</title>
+    <script src="https://cdn.iamport.kr/v1/iamport.js"></script>
+</head>
+<body>
+    <h1>포트원 결제 테스트</h1>
+    <button onclick="requestPayment()">결제하기</button>
+    
+    <div id="result"></div>
+
+    <script>
+        var IMP = window.IMP;
+        IMP.init('0366407778602480');
+
+        function requestPayment() {
+            IMP.request_pay({
+                pg: 'html5_inicis',
+                pay_method: 'card',
+                merchant_uid: 'order_portone_test_001',
+                amount: 9900,
+                name: '프리미엄 구독',
+                buyer_email: 'test@example.com',
+                buyer_name: '테스트 사용자',
+                buyer_tel: '010-1234-5678'
+            }, function(rsp) {
+                console.log('결제 응답:', rsp);
+                
+                if (rsp.success) {
+                    // 결제 성공 시 서버에 검증 요청
+                    fetch('http://localhost:9000/payments/verify', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            impUid: rsp.imp_uid,
+                            merchantUid: rsp.merchant_uid,
+                            status: 'success'
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('서버 검증 응답:', data);
+                        document.getElementById('result').innerHTML = 
+                            '<h3>결제 성공!</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    })
+                    .catch(error => {
+                        console.error('서버 검증 오류:', error);
+                        document.getElementById('result').innerHTML = 
+                            '<h3>결제 성공했지만 서버 검증 실패</h3><pre>' + error.message + '</pre>';
+                    });
+                } else {
+                    // 결제 실패 시 서버에 실패 요청
+                    fetch('http://localhost:9000/payments/verify', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            impUid: rsp.imp_uid,
+                            merchantUid: rsp.merchant_uid,
+                            status: 'failed'
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('서버 검증 응답:', data);
+                        document.getElementById('result').innerHTML = 
+                            '<h3>결제 실패</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    })
+                    .catch(error => {
+                        console.error('서버 검증 오류:', error);
+                        document.getElementById('result').innerHTML = 
+                            '<h3>결제 실패했고 서버 검증도 실패</h3><pre>' + error.message + '</pre>';
+                    });
+                }
+            });
+        }
+    </script>
+</body>
+</html>
