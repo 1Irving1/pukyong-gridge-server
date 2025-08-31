@@ -60,7 +60,7 @@ public class PaymentService {
     private BigDecimal calculateExpectedAmount(Long userId) {
         // 현재는 고정 금액 9900원 반환
         // 실제로는 사용자별 할인, 쿠폰, 구독 상태 등을 고려하여 계산
-        return new BigDecimal("9900.00");
+        return new BigDecimal("9900");  // 소수점 제거
     }
 
     /**
